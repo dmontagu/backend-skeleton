@@ -1,0 +1,40 @@
+.vscode
+.mypy_cache
+.dmypy.json
+.pytest_cache
+.idea
+.DS_STORE
+
+data/**
+!data/dev_data.sql
+!data/dev_images.tar.gz
+joblib_cache/
+**/joblib_inspect.py
+
+docker/docker-stack.yml
+docker/secrets-prod.env
+docker/secrets-stag.env
+
+*.egg-info/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Cython extensions
+build/
+*.so
+*.c
+
+*.pyc
+
+# Ignore bento tool run paths (this line added by `bento init`)
+.bento/

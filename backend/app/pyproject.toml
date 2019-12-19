@@ -1,0 +1,73 @@
+[tool.poetry]
+name = "app"
+version = "0.1.0"
+description = "Example App"
+authors = ["Firstname Lastname <author@email.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+# ASGI
+fastapi = "~0.45"
+pydantic = { version = "^1.0", extras = ["email"] }
+starlette = "*"
+uvicorn = "*"
+gunicorn = "*"
+
+# Database
+sqlalchemy = "*"
+psycopg2-binary = "*"
+databases = { version = "*", extras = ["postgresql"]}
+alembic = "*"
+
+# Cache
+diskcache = "*"
+cached_property = "*"
+
+# Support for form data and files
+aiofiles = "*"
+python-multipart = "*"
+
+# Retries
+tenacity = "*"
+
+# Testing (used by the test-runner container; included here to ensure consistent environment between test and non-test)
+sqlalchemy-utils = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-asyncio = "*"
+pytest-sugar = "*"
+coverage = "*"
+requests = "*"  # for Starlette TestClient
+
+[tool.poetry.dev-dependencies]
+sqlalchemy-stubs = "*"
+flake8 = "*"
+isort = "*"
+autoflake = "*"
+black = { version = "*", allow-prereleases = true }
+mypy = "0.740"  # for pydantic compatibility
+
+[tool.black]
+line-length = 120
+target_version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+    \.git
+    | \.mypy_cache
+    | \.pytest_cache
+    | htmlcov
+    | build
+  )/
+)
+'''
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+combine_as_imports = true
+known_first_party = ["app", "tests"]

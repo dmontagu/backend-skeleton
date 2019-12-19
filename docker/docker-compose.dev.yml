@@ -1,0 +1,39 @@
+version: '3.4'
+
+x-dev-config: &dev-config
+  env_file:
+    - env-environment-dev.env
+    - secrets-dev.env
+  volumes:
+    - ../backend/app:/app:cached
+    - ../backend/static:/static:cached
+
+# To keep containers alive doing nothing, use:
+# command: bash -c "while true; do sleep 1; done"
+services:
+  backend:
+    <<: *dev-config
+    labels:
+      - traefik.frontend.rule=PathPrefix:/
+      - traefik.enable=true
+      - traefik.port=80
+      - traefik.tags=${TRAEFIK_TAG:-traefik_tag}
+    command: /start-dev.sh
+  backend-tests:
+    <<: *dev-config
+  traefik:
+    labels:
+      - traefik.frontend.rule=Host:traefik.${DOMAIN}
+      - traefik.enable=true
+      - traefik.port=80
+    ports:
+      - '80:80'
+      - '8091:8080'
+    command: >
+      --docker
+      --docker.watch
+      --docker.exposedbydefault=false
+      --constraints=tag==${TRAEFIK_TAG:-traefik_tag}
+      --logLevel=DEBUG
+      --accessLog
+      --web

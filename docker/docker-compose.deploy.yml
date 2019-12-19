@@ -1,0 +1,101 @@
+version: '3.4'
+
+x-networks: &networks
+  networks:
+    - default
+    - ${TRAEFIK_PUBLIC_NETWORK:?TRAEFIK_PUBLIC_NETWORK not set}
+
+x-consul-shared: &consul-shared
+  image: consul
+  environment:
+    - CONSUL_BIND_INTERFACE=eth0
+    - 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}'
+
+x-traefik-enabled: &traefik-enabled
+  deploy:
+    labels:
+      - traefik.enable=true
+      - traefik.tags=${TRAEFIK_TAG:?TRAEFIK_TAG not set}
+      - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:?TRAEFIK_PUBLIC_NETWORK not set}
+      - traefik.redirectorservice.frontend.entryPoints=http
+      - traefik.redirectorservice.frontend.redirect.entryPoint=https
+      - traefik.webservice.frontend.entryPoints=https
+
+services:
+  backend:
+    <<: *traefik-enabled
+    image: '${DOCKER_IMAGE_BACKEND:?DOCKER_IMAGE_BACKEND}:${TAG-latest}'
+    # The following line would require that an image registry at 127.0.0.1:5000 exist:
+    # image: '127.0.0.1:5000/${DOCKER_IMAGE_BACKEND}:${TAG-latest}'
+    networks:
+      default:
+        aliases:
+          - ${DOMAIN:?DOMAIN}
+
+  consul-leader:
+    <<: *consul-shared
+    <<: *networks
+    <<: *traefik-enabled
+    command: agent -server -client=0.0.0.0 -bootstrap -ui
+    volumes:
+      - consul-data-leader:/consul/data
+
+  consul-replica:
+    <<: *consul-shared
+    <<: *networks
+    command: agent -server -client=0.0.0.0 -retry-join="consul-leader"
+    volumes:
+      - consul-data-replica:/consul/data
+    deploy:
+      replicas: ${CONSUL_REPLICAS:-3}
+      placement:
+        preferences:
+          - spread: node.id
+
+  db:
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
+    deploy:
+      placement:
+        constraints:
+          - node.labels.${STACK_NAME:?STACK_NAME not set}.app-db-data == true
+
+  traefik:
+    <<: *networks
+    <<: *traefik-enabled
+    ports:
+      - 80:80
+      - 443:443
+    deploy:
+      replicas: ${TRAEFIK_REPLICAS:-3}
+      placement:
+        constraints:
+          - node.role == manager
+        preferences:
+          - spread: node.id
+    command: >
+      --docker
+      --docker.swarmmode
+      --docker.domain=${DOMAIN:?DOMAIN not set}
+      --docker.watch
+      --docker.exposedbydefault=false
+      --constraints=tag==${TRAEFIK_TAG:?TRAEFIK_TAG not set}
+      --entrypoints='Name:http Address::80'
+      --entrypoints='Name:https Address::443 TLS'
+      --defaultentrypoints=http,https
+      --consul
+      --consul.endpoint="consul-leader:8500"
+      --logLevel=DEBUG
+      --accessLog
+      --web
+    depends_on:
+      - consul-leader
+
+networks:
+  traefik-public:
+    external: true
+
+volumes:
+  app-db-data:
+  consul-data-leader:
+  consul-data-replica:

@@ -1,0 +1,82 @@
+image: tiangolo/docker-with-compose
+
+before_script:
+  - pip install docker-auto-labels
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+stages:
+  - test
+  - build
+  - deploy
+
+tests:
+  stage: test
+  script:
+    - sh ./scripts/ci/test-deploy.sh
+  only:
+    - develop
+    - master
+    - production
+  tags:
+    - build
+    - test
+
+build-stag:
+  stage: build
+  script:
+    - TAG=stag sh ./scripts/ci/build.sh
+  only:
+    - master
+  tags:
+    - build
+    - test
+    
+build-prod:
+  stage: build
+  script:
+    - TAG=prod sh ./scripts/ci/build.sh
+  only:
+    - production
+  tags:
+    - build
+    - test
+
+deploy-stag:
+  stage: deploy
+  # maybe try TRAEFIK_PUBLIC_NETWORK=tag-example-com_traefik-public-network ??
+  # if it's correct as is, drop the use of the TRAEFIK_PUBLIC_NETWORK environment variable
+  script: 
+    - >
+      DOMAIN=stag.example.com
+      TRAEFIK_TAG=stag.example.com
+      TRAEFIK_PUBLIC_NETWORK=traefik-public-network
+      STACK_NAME=stag-example-com
+      TAG=stag
+      sh ./scripts/ci/deploy.sh
+  environment:
+    name: staging
+    url: https://stag.example.com
+  only:
+    - master
+  tags:
+    - swarm
+    - stag
+
+deploy-prod:
+  stage: deploy
+  script:
+    - >
+      DOMAIN=example.com
+      TRAEFIK_TAG=example.com
+      TRAEFIK_PUBLIC_NETWORK=traefik-public-network
+      STACK_NAME=example-com
+      TAG=prod
+      sh ./scripts/ci/deploy.sh
+  environment:
+    name: production
+    url: https://example.com
+  only:
+    - production
+  tags:
+    - swarm
+    - prod

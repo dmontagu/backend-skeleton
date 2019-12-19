@@ -1,0 +1,22 @@
+# This file contains non-shared labels; shared labels are included in deploy.yml
+
+version: '3.4'
+
+services:
+  backend:
+    deploy:
+      labels:
+        - traefik.frontend.rule=Host:${DOMAIN:?DOMAIN not set}
+        - traefik.port=80
+  consul-leader:
+    deploy:
+      labels:
+        - traefik.frontend.rule=Host:consul.${DOMAIN:?DOMAIN not set}
+        - traefik.port=8500
+        - traefik.frontend.auth.basic.users=${USERNAME:?USERNAME not set}:${HASHED_PASSWORD:?HASHED_PASSWORD not set}
+  traefik:
+    deploy:
+      labels:
+        - traefik.frontend.rule=Host:traefik.${DOMAIN:?DOMAIN not set}
+        - traefik.port=8080
+        - traefik.frontend.auth.basic.users=${USERNAME:?USERNAME not set}:${HASHED_PASSWORD:?HASHED_PASSWORD not set}

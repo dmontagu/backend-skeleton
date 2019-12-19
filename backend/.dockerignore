@@ -1,0 +1,7 @@
+**/.mypy_cache
+**/.pytest_cache
+**/.cache
+**/*.pyc
+**/__pycache__
+**/joblib_cache
+**/*.egg-info

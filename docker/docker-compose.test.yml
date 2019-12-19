@@ -1,0 +1,16 @@
+version: '3.4'
+
+services:
+  backend-tests:
+    build:
+      context: ../backend
+      dockerfile: dockerfiles/tests.dockerfile
+    command: bash -c "while true; do sleep 1; done"
+    depends_on:
+      - db
+    env_file:
+      - env-backend.env
+      - env-postgres.env
+    environment:
+      - DEBUG_EXCEPTIONS=false
+      - APP_TESTING=true
